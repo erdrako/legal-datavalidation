@@ -6,6 +6,8 @@
   "private": false,
   "scripts": {
     "validate:example": "node scripts/validate-candidate.mjs --input examples/candidate-bundle.example.json --output data/approved/approved-bundle.example.generated.json --report data/reports/validation-report.example.generated.json",
+    "build:dev-dataset": "node scripts/build-dev-structural-dataset.mjs --candidate-dir ../legal-datacollection/data/candidate --candidate-glob ar-law- --output data/dev/dev-structural-approved-bundle.generated.json --report-dir data/reports/dev",
+    "review:example": "node scripts/record-review-decision.mjs --candidate examples/candidate-bundle.example.json --validation-report data/reports/validation-report.example.generated.json --decision REQUEST_REVIEW --reviewer lexmapa-dev --notes \"Example review decision\" --output data/review/example-review-decision.generated.json",
     "check": "npm run validate:example"
   }
 }

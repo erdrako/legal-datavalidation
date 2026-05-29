@@ -86,3 +86,38 @@ El reporte marca:
 - Si el bundle requiere revision humana antes de tratarse como aprobado legalmente.
 
 El approved bundle generado por esta CLI debe entenderse como salida tecnica para probar integracion downstream. La aprobacion legal real requiere decision auditada.
+
+## Flujo 1: dataset estructural de desarrollo
+
+Para construir un dataset descartable desde los candidates generados por `legal-datacollection`:
+
+```bash
+npm run build:dev-dataset
+```
+
+Salida:
+
+```text
+data/dev/dev-structural-approved-bundle.generated.json
+```
+
+Este bundle incluye:
+
+- `dataset.mode = DEV_STRUCTURAL`
+- `dataset.disposable = true`
+- read models para backend/frontend
+- resumen de reportes de validacion
+
+No debe usarse como aprobacion legal real.
+
+## Flujo 2: revision y aprobacion real
+
+El flujo de aprobacion real debe usar:
+
+- candidate bundle
+- reporte de parsing
+- reporte de validacion
+- checklist de revision humana
+- decision auditada
+
+Hasta que exista esa decision, el dato puede visualizarse como desarrollo o pendiente, pero no como dato legal aprobado.

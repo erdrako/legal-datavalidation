@@ -15,6 +15,30 @@ Toda decision de validacion debe ser auditable.
 - Citas revisadas.
 - Cambios aplicados, si los hubiera.
 
+## CLI inicial
+
+Para registrar una decision de revision:
+
+```bash
+node scripts/record-review-decision.mjs \
+  --candidate path/to/candidate.json \
+  --parsing-report path/to/parsing-report.json \
+  --validation-report path/to/validation-report.json \
+  --decision REQUEST_REVIEW \
+  --reviewer reviewer-id \
+  --notes "Motivo de la decision" \
+  --output data/review/review-decision.json
+```
+
+Decisiones soportadas:
+
+- `APPROVE_PARTIAL`
+- `APPROVE`
+- `REJECT`
+- `REQUEST_REVIEW`
+
+Este comando no modifica datos por si mismo. Registra la decision auditada que luego puede habilitar o bloquear una promocion real.
+
 ## Criterios para aprobar
 
 Un dato puede aprobarse cuando:

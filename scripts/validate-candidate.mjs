@@ -5,6 +5,7 @@ const args = parseArgs(process.argv.slice(2));
 const inputPath = args.input;
 const outputPath = args.output;
 const reportPath = args.report;
+const datasetMode = args["dataset-mode"];
 
 if (!inputPath) {
   fail("Missing --input <path>");
@@ -22,7 +23,7 @@ const validationReport = buildValidationReport(candidate, {
   inputPath,
   generatedAt: approvedAt
 });
-const approved = promoteCandidateBundle(candidate, approvedAt);
+const approved = promoteCandidateBundle(candidate, approvedAt, datasetMetadataFromArgs(args, approvedAt));
 
 mkdirSync(dirname(resolve(outputPath)), { recursive: true });
 writeFileSync(resolve(outputPath), `${JSON.stringify(approved, null, 2)}\n`, "utf8");
@@ -43,7 +44,14 @@ function parseArgs(argv) {
     const key = argv[index];
     const value = argv[index + 1];
 
-    if (key === "--input" || key === "--output" || key === "--report") {
+    if (
+      key === "--input" ||
+      key === "--output" ||
+      key === "--report" ||
+      key === "--dataset-mode" ||
+      key === "--disposable" ||
+      key === "--dataset-warning"
+    ) {
       if (!value || value.startsWith("--")) {
         fail(`Missing value for ${key}`);
       }
@@ -136,8 +144,8 @@ function validateCandidateBundle(bundle) {
   }
 }
 
-function promoteCandidateBundle(candidate, approvedAt) {
-  return {
+function promoteCandidateBundle(candidate, approvedAt, dataset) {
+  const bundle = {
     schemaVersion: candidate.schemaVersion,
     approvedAt,
     approvedBy: "legal-datavalidation-cli",
@@ -154,6 +162,25 @@ function promoteCandidateBundle(candidate, approvedAt) {
     readModels: {
       legalItemOverviews: candidate.legalItems.map((item) => buildOverview(candidate, item, approvedAt))
     }
+  };
+
+  if (dataset) {
+    bundle.dataset = dataset;
+  }
+
+  return bundle;
+}
+
+function datasetMetadataFromArgs(parsedArgs, generatedAt) {
+  if (!datasetMode) {
+    return undefined;
+  }
+
+  return {
+    mode: datasetMode,
+    generatedAt,
+    disposable: parsedArgs.disposable === "true",
+    warning: parsedArgs["dataset-warning"]
   };
 }
 

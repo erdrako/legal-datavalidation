@@ -8,4 +8,6 @@ data/staging/
 data/approved/
 data/rejected/
 data/reports/
+data/dev/
+data/review/
 *.log
