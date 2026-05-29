@@ -42,3 +42,4 @@ Sin esta capa, el sistema correria el riesgo de mostrar extracciones automaticas
 - [Pipeline de validacion](./docs/VALIDATION_PIPELINE.md)
 - [Decisiones de revision](./docs/REVIEW_DECISIONS.md)
 - [Integracion con contratos](./docs/CONTRACT_INTEGRATION.md)
+- [Checklist de revision humana](./docs/HUMAN_REVIEW_CHECKLIST.md)
