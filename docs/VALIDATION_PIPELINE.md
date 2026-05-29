@@ -49,3 +49,25 @@ flowchart TD
 - `REJECTED`: dato descartado con razon.
 - `NEEDS_REVIEW`: dato pendiente de revision humana.
 
+## CLI inicial
+
+El repositorio incluye una CLI minima para validar un candidate bundle y generar un approved bundle de prueba:
+
+```bash
+npm run validate:example
+```
+
+El comando lee:
+
+```text
+examples/candidate-bundle.example.json
+```
+
+y escribe:
+
+```text
+data/approved/approved-bundle.example.generated.json
+```
+
+Esta CLI no reemplaza la revision humana. Es el primer esqueleto funcional para validar estructura, referencias y citas minimas.
+

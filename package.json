@@ -1,0 +1,12 @@
+{
+  "name": "@lexmapa/datavalidation",
+  "version": "0.1.0",
+  "description": "Validacion, auditoria y promocion de datos legales candidatos para LexMapa.",
+  "type": "module",
+  "private": false,
+  "scripts": {
+    "validate:example": "node scripts/validate-candidate.mjs --input examples/candidate-bundle.example.json --output data/approved/approved-bundle.example.generated.json",
+    "check": "npm run validate:example"
+  }
+}
+

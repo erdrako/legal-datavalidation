@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "0.1.0",
+  "generatedAt": "2026-05-29T00:00:00.000Z",
+  "source": {
+    "id": "infoleg",
+    "name": "InfoLEG",
+    "sourceUrl": "https://www.argentina.gob.ar/normativa",
+    "retrievedAt": "2026-05-29T00:00:00.000Z",
+    "official": true
+  },
+  "legalItems": [
+    {
+      "id": "ar-law-example-001",
+      "type": "LAW",
+      "title": "Norma argentina de ejemplo",
+      "status": "DESCONOCIDO",
+      "jurisdiction": {
+        "country": "AR",
+        "level": "NATIONAL"
+      },
+      "source": {
+        "id": "infoleg",
+        "name": "InfoLEG",
+        "sourceUrl": "https://www.argentina.gob.ar/normativa",
+        "retrievedAt": "2026-05-29T00:00:00.000Z",
+        "official": true
+      },
+      "summaryPlainLanguage": "Item legal de ejemplo para validar el pipeline candidate a approved."
+    }
+  ],
+  "provisions": [
+    {
+      "id": "ar-law-example-001-art-1",
+      "legalItemId": "ar-law-example-001",
+      "type": "ARTICLE",
+      "label": "Articulo 1",
+      "order": 1,
+      "textOriginal": "Texto de ejemplo del articulo 1.",
+      "status": "DESCONOCIDO"
+    }
+  ],
+  "citations": [
+    {
+      "id": "citation-example-001",
+      "sourceLegalItemId": "ar-law-example-001",
+      "provisionId": "ar-law-example-001-art-1",
+      "article": "1",
+      "originalText": "Texto de ejemplo del articulo 1.",
+      "sourceUrl": "https://www.argentina.gob.ar/normativa",
+      "retrievedAt": "2026-05-29T00:00:00.000Z"
+    }
+  ],
+  "relationships": [],
+  "rules": [],
+  "concepts": [],
+  "snapshots": []
+}
+
