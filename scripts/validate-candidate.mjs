@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 const args = parseArgs(process.argv.slice(2));
 const inputPath = args.input;
 const outputPath = args.output;
+const reportPath = args.report;
 
 if (!inputPath) {
   fail("Missing --input <path>");
@@ -17,12 +18,22 @@ const candidate = readJson(inputPath);
 const approvedAt = new Date().toISOString();
 
 validateCandidateBundle(candidate);
+const validationReport = buildValidationReport(candidate, {
+  inputPath,
+  generatedAt: approvedAt
+});
 const approved = promoteCandidateBundle(candidate, approvedAt);
 
 mkdirSync(dirname(resolve(outputPath)), { recursive: true });
 writeFileSync(resolve(outputPath), `${JSON.stringify(approved, null, 2)}\n`, "utf8");
 
+if (reportPath) {
+  mkdirSync(dirname(resolve(reportPath)), { recursive: true });
+  writeFileSync(resolve(reportPath), `${JSON.stringify(validationReport, null, 2)}\n`, "utf8");
+}
+
 console.log(`Validated candidate bundle: ${inputPath}`);
+if (reportPath) console.log(`Wrote validation report: ${reportPath}`);
 console.log(`Wrote approved bundle: ${outputPath}`);
 
 function parseArgs(argv) {
@@ -32,7 +43,7 @@ function parseArgs(argv) {
     const key = argv[index];
     const value = argv[index + 1];
 
-    if (key === "--input" || key === "--output") {
+    if (key === "--input" || key === "--output" || key === "--report") {
       if (!value || value.startsWith("--")) {
         fail(`Missing value for ${key}`);
       }
@@ -146,7 +157,128 @@ function promoteCandidateBundle(candidate, approvedAt) {
   };
 }
 
+function buildValidationReport(candidate, { inputPath, generatedAt }) {
+  const legalItemIds = new Set(candidate.legalItems.map((item) => item.id));
+  const provisionById = new Map(candidate.provisions.map((provision) => [provision.id, provision]));
+  const citationsByProvisionId = groupBy(
+    candidate.citations.filter((citation) => citation.provisionId),
+    (citation) => citation.provisionId
+  );
+  const provisionsWithoutCitation = candidate.provisions
+    .filter((provision) => !citationsByProvisionId.has(provision.id))
+    .map((provision) => ({
+      id: provision.id,
+      label: provision.label,
+      legalItemId: provision.legalItemId
+    }));
+  const citationTextMismatches = candidate.citations
+    .filter((citation) => citation.provisionId && provisionById.has(citation.provisionId))
+    .filter((citation) => provisionById.get(citation.provisionId).textOriginal !== citation.originalText)
+    .map((citation) => ({
+      citationId: citation.id,
+      provisionId: citation.provisionId
+    }));
+  const duplicateProvisionLabels = duplicateLabelsByLegalItem(candidate.provisions);
+  const unknownStatusItems = candidate.legalItems
+    .filter((item) => item.status === "DESCONOCIDO")
+    .map((item) => ({ id: item.id, title: item.title }));
+  const unknownStatusProvisions = candidate.provisions
+    .filter((provision) => provision.status === "DESCONOCIDO")
+    .map((provision) => ({ id: provision.id, label: provision.label }));
+  const warnings = buildReportWarnings({
+    provisionsWithoutCitation,
+    citationTextMismatches,
+    duplicateProvisionLabels,
+    unknownStatusItems,
+    unknownStatusProvisions
+  });
+
+  return {
+    schemaVersion: "0.1.0",
+    generatedAt,
+    inputPath,
+    source: candidate.source,
+    summary: {
+      legalItems: candidate.legalItems.length,
+      provisions: candidate.provisions.length,
+      citations: candidate.citations.length,
+      relationships: candidate.relationships.length,
+      rules: candidate.rules.length,
+      concepts: candidate.concepts.length,
+      snapshots: candidate.snapshots.length
+    },
+    structuralChecks: {
+      legalItemReferencesValid: candidate.provisions.every((provision) => legalItemIds.has(provision.legalItemId)),
+      citationCoverage: {
+        provisionsWithCitation: candidate.provisions.length - provisionsWithoutCitation.length,
+        provisionsWithoutCitation
+      },
+      citationTextMismatches,
+      duplicateProvisionLabels
+    },
+    reviewSignals: {
+      unknownStatusItems,
+      unknownStatusProvisions,
+      requiresHumanReview:
+        warnings.length > 0 ||
+        unknownStatusItems.length > 0 ||
+        unknownStatusProvisions.length > 0 ||
+        duplicateProvisionLabels.length > 0
+    },
+    warnings
+  };
+}
+
+function buildReportWarnings({
+  provisionsWithoutCitation,
+  citationTextMismatches,
+  duplicateProvisionLabels,
+  unknownStatusItems,
+  unknownStatusProvisions
+}) {
+  const warnings = [];
+
+  if (provisionsWithoutCitation.length > 0) {
+    warnings.push({
+      code: "PROVISIONS_WITHOUT_CITATION",
+      severity: "HIGH",
+      message: "Hay disposiciones sin cita asociada; no deberian aprobarse como dato publicado."
+    });
+  }
+
+  if (citationTextMismatches.length > 0) {
+    warnings.push({
+      code: "CITATION_TEXT_MISMATCH",
+      severity: "HIGH",
+      message: "Hay citas cuyo texto no coincide exactamente con la disposicion referenciada."
+    });
+  }
+
+  if (duplicateProvisionLabels.length > 0) {
+    warnings.push({
+      code: "DUPLICATE_PROVISION_LABELS",
+      severity: "MEDIUM",
+      message: "Hay etiquetas de articulos repetidas dentro del mismo item legal; requieren revision manual."
+    });
+  }
+
+  if (unknownStatusItems.length > 0 || unknownStatusProvisions.length > 0) {
+    warnings.push({
+      code: "UNKNOWN_LEGAL_STATUS",
+      severity: "MEDIUM",
+      message: "Hay items o disposiciones con estado legal DESCONOCIDO; requieren decision de revision."
+    });
+  }
+
+  return warnings;
+}
+
 function buildOverview(candidate, item, approvedAt) {
+  const itemProvisions = candidate.provisions.filter((provision) => provision.legalItemId === item.id);
+  const pendingValidationCount =
+    (item.status === "DESCONOCIDO" ? 1 : 0) +
+    itemProvisions.filter((provision) => provision.status === "DESCONOCIDO").length;
+
   return {
     id: item.id,
     title: item.title,
@@ -160,7 +292,7 @@ function buildOverview(candidate, item, approvedAt) {
       status: "UPDATED",
       lastValidatedAt: approvedAt,
       lastSourceCheckedAt: candidate.source.retrievedAt ?? candidate.generatedAt,
-      pendingValidationCount: 0
+      pendingValidationCount
     }
   };
 }
@@ -252,6 +384,47 @@ function uniqueIds(items, label) {
   return ids;
 }
 
+function duplicateLabelsByLegalItem(provisions) {
+  const labelsByLegalItem = new Map();
+
+  for (const provision of provisions) {
+    if (!labelsByLegalItem.has(provision.legalItemId)) {
+      labelsByLegalItem.set(provision.legalItemId, new Map());
+    }
+
+    const labelCounts = labelsByLegalItem.get(provision.legalItemId);
+    labelCounts.set(provision.label, (labelCounts.get(provision.label) ?? 0) + 1);
+  }
+
+  const duplicates = [];
+
+  for (const [legalItemId, labelCounts] of labelsByLegalItem.entries()) {
+    for (const [label, count] of labelCounts.entries()) {
+      if (count > 1) {
+        duplicates.push({ legalItemId, label, count });
+      }
+    }
+  }
+
+  return duplicates;
+}
+
+function groupBy(items, keyFn) {
+  const grouped = new Map();
+
+  for (const item of items) {
+    const key = keyFn(item);
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(item);
+  }
+
+  return grouped;
+}
+
 function assertObject(value, label) {
   assert(value !== null && typeof value === "object" && !Array.isArray(value), `${label} must be an object`);
 }
@@ -275,4 +448,3 @@ function fail(message) {
   console.error(`Validation failed: ${message}`);
   process.exit(1);
 }
-

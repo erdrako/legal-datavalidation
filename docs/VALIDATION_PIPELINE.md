@@ -71,3 +71,18 @@ data/approved/approved-bundle.example.generated.json
 
 Esta CLI no reemplaza la revision humana. Es el primer esqueleto funcional para validar estructura, referencias y citas minimas.
 
+Tambien genera un reporte estructural:
+
+```text
+data/reports/validation-report.example.generated.json
+```
+
+El reporte marca:
+
+- Cobertura de citas por disposicion.
+- Citas cuyo texto no coincide exactamente con la disposicion.
+- Etiquetas de disposiciones duplicadas.
+- Items o disposiciones con estado `DESCONOCIDO`.
+- Si el bundle requiere revision humana antes de tratarse como aprobado legalmente.
+
+El approved bundle generado por esta CLI debe entenderse como salida tecnica para probar integracion downstream. La aprobacion legal real requiere decision auditada.

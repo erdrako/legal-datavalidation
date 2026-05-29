@@ -7,5 +7,5 @@ coverage/
 data/staging/
 data/approved/
 data/rejected/
+data/reports/
 *.log
-
