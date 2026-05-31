@@ -147,7 +147,7 @@ Ejemplo de decision que habilita promocion:
 
 ```bash
 npm run validate:example
-npm run review:approve-example
+npm run review:partial-example
 ```
 
 Las decisiones que habilitan promocion son:
@@ -156,6 +156,16 @@ Las decisiones que habilitan promocion son:
 - `APPROVE_PARTIAL`
 
 Las decisiones `REJECT` y `REQUEST_REVIEW` bloquean la promocion.
+
+Reglas de promocion:
+
+- `APPROVE` exige que no queden warnings ni senales de revision humana.
+- `APPROVE_PARTIAL` permite publicar un alcance parcial revisado, dejando el
+  dataset marcado con `reviewScope = PARTIAL`.
+- Cualquier warning `HIGH` bloquea la promocion salvo override explicito
+  `--allow-high-warnings true` con justificacion documentada.
+- Si se necesita aprobar con warnings no criticos, debe usarse
+  `APPROVE_PARTIAL` o `--allow-review-warnings true` con justificacion.
 
 ### Promocion a dataset revisado
 
@@ -175,6 +185,8 @@ El bundle generado incluye:
 
 - `dataset.mode = HUMAN_REVIEWED`
 - `dataset.disposable = false`
+- `dataset.reviewScope = FULL` o `PARTIAL`
+- `dataset.promotionGate` con conteo de warnings y overrides usados
 - referencias a las decisiones de revision usadas
 
 Para exportarlo a SQL remoto de D1:

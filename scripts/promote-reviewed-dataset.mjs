@@ -17,6 +17,8 @@ if (!args.output) {
 
 const mode = args.mode ?? "HUMAN_REVIEWED";
 const allowedModes = new Set(["HUMAN_REVIEWED", "PRODUCTION_APPROVED"]);
+const allowReviewWarnings = args["allow-review-warnings"] === "true";
+const allowHighWarnings = args["allow-high-warnings"] === "true";
 
 if (!allowedModes.has(mode)) {
   fail(`Invalid --mode ${mode}`);
@@ -31,6 +33,10 @@ const generatedAt = new Date().toISOString();
 const reviewers = [...new Set(decisions.map(({ record }) => record.reviewer).filter(Boolean))].sort();
 const approvedBy = (args["approved-by"] ?? reviewers.join(", ")) || "lexmapa-review-flow";
 const allowedDecisionByLegalItem = decisionsAllowedForPromotion(decisions);
+const promotionGate = promotionGateFor(decisions, {
+  allowReviewWarnings,
+  allowHighWarnings
+});
 
 assertAllLegalItemsCovered(approvedBundles, allowedDecisionByLegalItem);
 
@@ -39,7 +45,8 @@ const promoted = mergeBundles({
   decisions,
   generatedAt,
   mode,
-  approvedBy
+  approvedBy,
+  promotionGate
 });
 
 mkdirSync(dirname(resolve(args.output)), { recursive: true });
@@ -62,6 +69,8 @@ function decisionsAllowedForPromotion(decisionsWithPaths) {
       fail(`Decision is not promotable: ${path}`);
     }
 
+    assertDecisionWarningsCompatible(path, record);
+
     for (const legalItemId of record.scope?.legalItemIds ?? []) {
       if (!allowed.has(legalItemId)) {
         allowed.set(legalItemId, []);
@@ -72,6 +81,25 @@ function decisionsAllowedForPromotion(decisionsWithPaths) {
   }
 
   return allowed;
+}
+
+function assertDecisionWarningsCompatible(path, record) {
+  const warnings = record.validationSignals?.warnings ?? [];
+  const highWarnings = warnings.filter((warning) => warning.severity === "HIGH");
+  const requiresHumanReview = record.validationSignals?.requiresHumanReview === true;
+
+  if (highWarnings.length > 0 && !allowHighWarnings) {
+    fail(`Decision ${path} has HIGH validation warnings. Use --allow-high-warnings true only with documented legal review.`);
+  }
+
+  if (record.decision === "APPROVE" && (warnings.length > 0 || requiresHumanReview) && !allowReviewWarnings) {
+    fail(
+      [
+        `Decision ${path} is APPROVE but still has validation warnings or review signals.`,
+        "Use APPROVE_PARTIAL, clear the warnings, or pass --allow-review-warnings true with documented justification."
+      ].join(" ")
+    );
+  }
 }
 
 function assertAllLegalItemsCovered(bundles, allowedDecisionByLegalItem) {
@@ -90,7 +118,26 @@ function assertAllLegalItemsCovered(bundles, allowedDecisionByLegalItem) {
   }
 }
 
-function mergeBundles({ approvedBundles, decisions, generatedAt, mode, approvedBy }) {
+function promotionGateFor(decisionsWithPaths, policy) {
+  const warnings = decisionsWithPaths.flatMap(({ record }) => record.validationSignals?.warnings ?? []);
+  const warningCounts = warnings.reduce((counts, warning) => {
+    const severity = warning.severity ?? "UNKNOWN";
+    counts[severity] = (counts[severity] ?? 0) + 1;
+    return counts;
+  }, {});
+  const reviewScope = decisionsWithPaths.some(({ record }) => record.decision === "APPROVE_PARTIAL")
+    ? "PARTIAL"
+    : "FULL";
+
+  return {
+    reviewScope,
+    allowReviewWarnings: policy.allowReviewWarnings,
+    allowHighWarnings: policy.allowHighWarnings,
+    warningCounts
+  };
+}
+
+function mergeBundles({ approvedBundles, decisions, generatedAt, mode, approvedBy, promotionGate }) {
   return {
     schemaVersion: "0.1.0",
     approvedAt: generatedAt,
@@ -101,6 +148,8 @@ function mergeBundles({ approvedBundles, decisions, generatedAt, mode, approvedB
       disposable: false,
       sourceBundleCount: approvedBundles.length,
       reviewDecisionCount: decisions.length,
+      reviewScope: promotionGate.reviewScope,
+      promotionGate,
       reviewDecisions: decisions.map(({ path, record }) => ({
         path,
         decidedAt: record.decidedAt,

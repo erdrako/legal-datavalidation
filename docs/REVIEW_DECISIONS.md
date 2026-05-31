@@ -62,10 +62,31 @@ La salida marca:
 ```text
 dataset.mode = HUMAN_REVIEWED
 dataset.disposable = false
+dataset.reviewScope = FULL | PARTIAL
 ```
 
 Si falta una decision para algun item legal, o si la decision es `REJECT` o
 `REQUEST_REVIEW`, la promocion falla.
+
+Reglas adicionales:
+
+- Una decision `APPROVE` no puede promover si todavia existen warnings o
+  `requiresHumanReview = true`.
+- Una decision `APPROVE_PARTIAL` puede promover un alcance limitado, dejando
+  trazado `dataset.reviewScope = PARTIAL`.
+- Warnings `HIGH` bloquean cualquier promocion salvo override explicito
+  `--allow-high-warnings true`.
+- Overrides como `--allow-review-warnings true` deben usarse solo con
+  justificacion documentada en la decision.
+
+El fixture de ejemplo del repositorio usa `APPROVE_PARTIAL` porque conserva
+warnings de revision:
+
+```bash
+npm run validate:example
+npm run review:partial-example
+npm run promote:example
+```
 
 ## Criterios para aprobar
 
