@@ -8,7 +8,12 @@
     "validate:example": "node scripts/validate-candidate.mjs --input examples/candidate-bundle.example.json --output data/approved/approved-bundle.example.generated.json --report data/reports/validation-report.example.generated.json",
     "build:dev-dataset": "node scripts/build-dev-structural-dataset.mjs --candidate-dir ../legal-datacollection/data/candidate --candidate-glob ar-law- --output data/dev/dev-structural-approved-bundle.generated.json --report-dir data/reports/dev",
     "export:d1:dev": "node scripts/export-d1-read-models.mjs --input data/dev/dev-structural-approved-bundle.generated.json --output data/d1/dev-structural-read-models.generated.sql",
+    "export:d1:dev:remote": "node scripts/export-d1-read-models.mjs --input data/dev/dev-structural-approved-bundle.generated.json --output data/d1/dev-structural-read-models.remote.generated.sql --omit-transaction true",
     "review:example": "node scripts/record-review-decision.mjs --candidate examples/candidate-bundle.example.json --validation-report data/reports/validation-report.example.generated.json --decision REQUEST_REVIEW --reviewer lexmapa-dev --notes \"Example review decision\" --output data/review/example-review-decision.generated.json",
+    "review:approve-example": "node scripts/record-review-decision.mjs --candidate examples/candidate-bundle.example.json --validation-report data/reports/validation-report.example.generated.json --decision APPROVE --reviewer lexmapa-dev-reviewer --notes \"Example approved decision for promotion flow\" --output data/review/example-approve-decision.generated.json",
+    "promote:example": "node scripts/promote-reviewed-dataset.mjs --approved data/approved/approved-bundle.example.generated.json --decision data/review/example-approve-decision.generated.json --approved-by lexmapa-dev-reviewer --output data/approved/human-reviewed-approved-bundle.example.generated.json",
+    "export:d1:reviewed:example": "node scripts/export-d1-read-models.mjs --input data/approved/human-reviewed-approved-bundle.example.generated.json --output data/d1/human-reviewed-read-models.example.generated.sql --omit-transaction true",
+    "clean:dev-data": "node scripts/clean-dev-data.mjs",
     "check": "npm run validate:example"
   }
 }

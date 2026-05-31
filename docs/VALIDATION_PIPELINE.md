@@ -122,6 +122,13 @@ Salida:
 data/d1/dev-structural-read-models.generated.sql
 ```
 
+Para generar una version compatible con `wrangler d1 execute --remote`, sin
+`BEGIN TRANSACTION`/`COMMIT`:
+
+```bash
+npm run export:d1:dev:remote
+```
+
 ## Flujo 2: revision y aprobacion real
 
 El flujo de aprobacion real debe usar:
@@ -133,3 +140,72 @@ El flujo de aprobacion real debe usar:
 - decision auditada
 
 Hasta que exista esa decision, el dato puede visualizarse como desarrollo o pendiente, pero no como dato legal aprobado.
+
+### Registro de decision
+
+Ejemplo de decision que habilita promocion:
+
+```bash
+npm run validate:example
+npm run review:approve-example
+```
+
+Las decisiones que habilitan promocion son:
+
+- `APPROVE`
+- `APPROVE_PARTIAL`
+
+Las decisiones `REJECT` y `REQUEST_REVIEW` bloquean la promocion.
+
+### Promocion a dataset revisado
+
+Para promover un approved bundle solo cuando existe una decision auditada:
+
+```bash
+npm run promote:example
+```
+
+Salida:
+
+```text
+data/approved/human-reviewed-approved-bundle.example.generated.json
+```
+
+El bundle generado incluye:
+
+- `dataset.mode = HUMAN_REVIEWED`
+- `dataset.disposable = false`
+- referencias a las decisiones de revision usadas
+
+Para exportarlo a SQL remoto de D1:
+
+```bash
+npm run export:d1:reviewed:example
+```
+
+## Limpieza de datos de desarrollo
+
+Antes de preparar un corte productivo:
+
+```bash
+npm run clean:dev-data
+```
+
+Ese comando elimina salidas descartables de `legal-datavalidation`:
+
+- `data/dev`
+- `data/d1`
+- `data/reports/dev`
+
+Opcionalmente puede borrar decisiones/revisiones o salidas aprobadas generadas:
+
+```bash
+node scripts/clean-dev-data.mjs --include-review-decisions
+node scripts/clean-dev-data.mjs --include-approved
+```
+
+Para limpiar tambien artefactos generados por `legal-datacollection`:
+
+```bash
+node scripts/clean-dev-data.mjs --include-datacollection
+```

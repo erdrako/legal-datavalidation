@@ -39,6 +39,34 @@ Decisiones soportadas:
 
 Este comando no modifica datos por si mismo. Registra la decision auditada que luego puede habilitar o bloquear una promocion real.
 
+## Promocion basada en decision
+
+Para convertir approved bundles estructurales en un dataset revisado, cada
+`LegalItem` debe estar cubierto por al menos una decision promotable:
+
+- `APPROVE`
+- `APPROVE_PARTIAL`
+
+Comando:
+
+```bash
+node scripts/promote-reviewed-dataset.mjs \
+  --approved data/approved/approved-bundle.json \
+  --decision data/review/review-decision.json \
+  --approved-by reviewer-id \
+  --output data/approved/human-reviewed-approved-bundle.json
+```
+
+La salida marca:
+
+```text
+dataset.mode = HUMAN_REVIEWED
+dataset.disposable = false
+```
+
+Si falta una decision para algun item legal, o si la decision es `REJECT` o
+`REQUEST_REVIEW`, la promocion falla.
+
 ## Criterios para aprobar
 
 Un dato puede aprobarse cuando:
