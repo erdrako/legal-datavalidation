@@ -110,6 +110,18 @@ Este bundle incluye:
 
 No debe usarse como aprobacion legal real.
 
+Para exportar los read models de ese bundle a SQL compatible con D1:
+
+```bash
+npm run export:d1:dev
+```
+
+Salida:
+
+```text
+data/d1/dev-structural-read-models.generated.sql
+```
+
 ## Flujo 2: revision y aprobacion real
 
 El flujo de aprobacion real debe usar:
